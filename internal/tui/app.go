@@ -45,6 +45,12 @@ type App struct {
 	showDone       bool
 	newNote        *NewNoteModel
 	err            error
+
+	search           *SearchModel
+	tagFilter        *FilterModel
+	typeFilter       *FilterModel
+	activeTagFilter  []string
+	activeTypeFilter []string
 }
 
 // NewApp creates a new App model with the given dependencies.
@@ -92,6 +98,40 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return a, tea.Batch(cmd, a.loadNotes)
 			}
 			return a, cmd
+		}
+	}
+
+	// Route key presses to the search overlay when it is active.
+	if a.view == viewSearch && a.search != nil {
+		if kp, ok := msg.(tea.KeyPressMsg); ok {
+			done, _ := a.search.Update(kp)
+			if done {
+				a.view = viewDashboard
+				a.search = nil
+			}
+			return a, nil
+		}
+	}
+
+	// Route key presses to the filter overlay when it is active.
+	if a.view == viewFilter {
+		if kp, ok := msg.(tea.KeyPressMsg); ok {
+			if a.tagFilter != nil {
+				done := a.tagFilter.Update(kp)
+				if done {
+					a.activeTagFilter = a.tagFilter.SelectedItems()
+					a.tagFilter = nil
+					a.view = viewDashboard
+				}
+			} else if a.typeFilter != nil {
+				done := a.typeFilter.Update(kp)
+				if done {
+					a.activeTypeFilter = a.typeFilter.SelectedItems()
+					a.typeFilter = nil
+					a.view = viewDashboard
+				}
+			}
+			return a, nil
 		}
 	}
 
@@ -148,6 +188,15 @@ func (a *App) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case 'n':
 		a.newNote = NewNewNoteModel(a.cfg, a.store, a.notes)
 		a.view = viewNewNote
+	case 's':
+		a.search = NewSearchModel(a.store)
+		a.view = viewSearch
+	case 't':
+		a.tagFilter = NewTagFilter(a.notes)
+		a.view = viewFilter
+	case 'y':
+		a.typeFilter = NewTypeFilter()
+		a.view = viewFilter
 	case 'q':
 		return a, tea.Quit
 	case 'a':
@@ -163,6 +212,19 @@ func (a *App) View() tea.View {
 		return tea.NewView(a.newNote.View())
 	}
 
+	if a.view == viewSearch && a.search != nil {
+		return tea.NewView(a.search.View())
+	}
+
+	if a.view == viewFilter {
+		if a.tagFilter != nil {
+			return tea.NewView(a.tagFilter.View())
+		}
+		if a.typeFilter != nil {
+			return tea.NewView(a.typeFilter.View())
+		}
+	}
+
 	if a.width == 0 {
 		return tea.NewView("Loading...")
 	}
@@ -173,7 +235,7 @@ func (a *App) View() tea.View {
 	list := a.renderList(listWidth)
 	preview := a.renderPreview(previewWidth)
 
-	help := helpStyle.Render("[n]ew  [e]dit  [d]ue  [t]ag filter  [s]earch  [m]ark done  [q]uit")
+	help := helpStyle.Render("[n]ew  [e]dit  [d]ue  [t]ag filter  t[y]pe filter  [s]earch  [m]ark done  [q]uit")
 
 	content := lipgloss.JoinHorizontal(lipgloss.Top,
 		borderStyle.Width(listWidth).Height(a.height-3).Render(list),
@@ -184,9 +246,47 @@ func (a *App) View() tea.View {
 }
 
 func (a *App) renderList(width int) string {
-	items := BuildDashboard(a.notes, a.showDone, a.cfg.DateFormat)
+	filtered := a.applyFilters(a.notes)
+	items := BuildDashboard(filtered, a.showDone, a.cfg.DateFormat)
 	a.dashboardItems = items
 	return RenderDashboard(items, a.cursor, width, a.cfg.DateFormat)
+}
+
+func (a *App) applyFilters(allNotes []*notes.Note) []*notes.Note {
+	if len(a.activeTagFilter) == 0 && len(a.activeTypeFilter) == 0 {
+		return allNotes
+	}
+	var result []*notes.Note
+	for _, n := range allNotes {
+		if len(a.activeTypeFilter) > 0 && !contains(a.activeTypeFilter, string(n.Type)) {
+			continue
+		}
+		if len(a.activeTagFilter) > 0 && !hasAnyTag(n.Tags, a.activeTagFilter) {
+			continue
+		}
+		result = append(result, n)
+	}
+	return result
+}
+
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
+}
+
+func hasAnyTag(noteTags, filterTags []string) bool {
+	for _, ft := range filterTags {
+		for _, nt := range noteTags {
+			if ft == nt {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (a *App) renderPreview(width int) string {
