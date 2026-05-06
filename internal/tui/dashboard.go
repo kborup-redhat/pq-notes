@@ -139,5 +139,5 @@ func renderDashboardItem(item DashboardItem, dateFormat string) string {
 		dueStr = " Due: " + dateutil.FormatDateOnly(n.Due, dateFormat)
 	}
 
-	return fmt.Sprintf("  %s %s%s  %s%s", typeLabel, n.Customer, priority, n.Title, dueStr)
+	return fmt.Sprintf("  %s %s%s  %s%s", typeLabel, n.Folder, priority, n.Title, dueStr)
 }

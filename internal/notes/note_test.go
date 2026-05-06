@@ -26,7 +26,7 @@ func TestNoteType_String(t *testing.T) {
 	}
 }
 
-func TestSanitizeCustomerName(t *testing.T) {
+func TestSanitizeFolderName(t *testing.T) {
 	tests := []struct {
 		name  string
 		input string
@@ -44,8 +44,8 @@ func TestSanitizeCustomerName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := SanitizeCustomerName(tt.input); got != tt.want {
-				t.Errorf("SanitizeCustomerName() = %v, want %v", got, tt.want)
+			if got := SanitizeFolderName(tt.input); got != tt.want {
+				t.Errorf("SanitizeFolderName() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -76,7 +76,7 @@ func TestNoteFilename(t *testing.T) {
 
 func TestParseNote_FullFrontmatter(t *testing.T) {
 	content := `---
-customer: acme-corp
+folder: acme-corp
 type: meeting
 created: 06-05-2026 14:30
 due: 10-05-2026 09:00
@@ -110,8 +110,8 @@ Discussion notes here.
 		t.Fatalf("ParseNote() error = %v", err)
 	}
 
-	if note.Customer != "acme-corp" {
-		t.Errorf("Customer = %v, want acme-corp", note.Customer)
+	if note.Folder != "acme-corp" {
+		t.Errorf("Folder = %v, want acme-corp", note.Folder)
 	}
 	if note.Type != Meeting {
 		t.Errorf("Type = %v, want %v", note.Type, Meeting)
@@ -158,7 +158,7 @@ Discussion notes here.
 
 func TestParseNote_USDateFormat(t *testing.T) {
 	content := `---
-customer: test-customer
+folder: test-folder
 type: task
 created: 05-06-2026 14:30
 due: 05-10-2026
@@ -184,7 +184,7 @@ due: 05-10-2026
 
 func TestParseNote_MinimalFrontmatter(t *testing.T) {
 	content := `---
-customer: test-customer
+folder: test-folder
 type: reminder
 created: 06-05-2026
 ---
@@ -197,8 +197,8 @@ created: 06-05-2026
 		t.Fatalf("ParseNote() error = %v", err)
 	}
 
-	if note.Customer != "test-customer" {
-		t.Errorf("Customer = %v, want test-customer", note.Customer)
+	if note.Folder != "test-folder" {
+		t.Errorf("Folder = %v, want test-folder", note.Folder)
 	}
 	if note.Type != Reminder {
 		t.Errorf("Type = %v, want %v", note.Type, Reminder)
@@ -215,7 +215,7 @@ func TestGenerateTemplate_Meeting(t *testing.T) {
 	created := time.Date(2026, 5, 6, 14, 30, 0, 0, time.UTC)
 	due := time.Date(2026, 5, 10, 9, 0, 0, 0, time.UTC)
 	note := &Note{
-		Customer: "acme-corp",
+		Folder: "acme-corp",
 		Type:     Meeting,
 		Created:  created,
 		Due:      due,
@@ -228,8 +228,8 @@ func TestGenerateTemplate_Meeting(t *testing.T) {
 
 	content, _ := GenerateTemplate(note, "02-01-2006 15:04")
 
-	if !strings.Contains(content, "customer: acme-corp") {
-		t.Errorf("Missing customer in frontmatter")
+	if !strings.Contains(content, "folder: acme-corp") {
+		t.Errorf("Missing folder in frontmatter")
 	}
 	if !strings.Contains(content, "type: meeting") {
 		t.Errorf("Missing type in frontmatter")
@@ -257,7 +257,7 @@ func TestGenerateTemplate_Meeting(t *testing.T) {
 func TestGenerateTemplate_Task(t *testing.T) {
 	created := time.Date(2026, 5, 6, 14, 30, 0, 0, time.UTC)
 	note := &Note{
-		Customer: "test-customer",
+		Folder: "test-folder",
 		Type:     Task,
 		Created:  created,
 		Status:   StatusOpen,
@@ -287,7 +287,7 @@ func TestGenerateTemplate_Task(t *testing.T) {
 func TestGenerateTemplate_Reminder(t *testing.T) {
 	created := time.Date(2026, 5, 6, 14, 30, 0, 0, time.UTC)
 	note := &Note{
-		Customer: "test-customer",
+		Folder: "test-folder",
 		Type:     Reminder,
 		Created:  created,
 		Status:   StatusOpen,
@@ -311,7 +311,7 @@ func TestGenerateTemplate_Reminder(t *testing.T) {
 func TestGenerateTemplate_Followup(t *testing.T) {
 	created := time.Date(2026, 5, 6, 14, 30, 0, 0, time.UTC)
 	note := &Note{
-		Customer: "test-customer",
+		Folder: "test-folder",
 		Type:     Followup,
 		Created:  created,
 		Status:   StatusOpen,
@@ -340,7 +340,7 @@ func TestGenerateTemplate_Followup(t *testing.T) {
 func TestGenerateTemplate_OmitsEmptyFields(t *testing.T) {
 	created := time.Date(2026, 5, 6, 14, 30, 0, 0, time.UTC)
 	note := &Note{
-		Customer: "test-customer",
+		Folder: "test-folder",
 		Type:     Reminder,
 		Created:  created,
 		Status:   StatusOpen,

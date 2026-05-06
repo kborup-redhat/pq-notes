@@ -97,7 +97,7 @@ func check(store *notes.NoteStore, tracker *Tracker) {
 			continue
 		}
 
-		if err := SendNotification(n.Title, n.Customer, n.Due); err != nil {
+		if err := SendNotification(n.Title, n.Folder, n.Due); err != nil {
 			log.Printf("daemon: notify: %v", err)
 			continue
 		}

@@ -2,7 +2,7 @@
 
 A terminal-based notes manager with post-quantum encryption, markdown preview, and Google Drive sync.
 
-All notes are encrypted at rest using [age](https://github.com/FiloSottile/age) with hybrid X25519 + ML-KEM-768 (post-quantum) keys. Notes are stored as encrypted markdown files organized by customer folders.
+All notes are encrypted at rest using [age](https://github.com/FiloSottile/age) with hybrid X25519 + ML-KEM-768 (post-quantum) keys. Notes are stored as encrypted markdown files organized in named folders.
 
 ## Features
 
@@ -55,7 +55,7 @@ Notes are markdown files with YAML frontmatter:
 
 ```markdown
 ---
-customer: Acme Corp
+folder: Acme Corp
 type: task
 created: 2026-05-06
 due: 2026-05-10
@@ -144,7 +144,7 @@ pq-notes import meeting.md.age.shared
 
 ```
 ~/notes/
-  <customer>/
+  <folder>/
     <note>.md.age          # Encrypted note files
   .pq-notes/
     config.yaml            # Configuration

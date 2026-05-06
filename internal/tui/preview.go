@@ -36,7 +36,7 @@ func RenderPreview(note *notes.Note, width int, dateFormat string) string {
 
 	var sb strings.Builder
 
-	sb.WriteString(fmt.Sprintf("**Customer:** %s\n\n", note.Customer))
+	sb.WriteString(fmt.Sprintf("**Folder:** %s\n\n", note.Folder))
 	sb.WriteString(fmt.Sprintf("**Type:** %s\n\n", note.Type))
 
 	if !note.Created.IsZero() {

@@ -117,7 +117,7 @@ func (s *SearchModel) View() string {
 		for i, n := range s.results {
 			label := fmt.Sprintf("  %s %s - %s",
 				typeStyle.Render("["+string(n.Type)+"]"),
-				n.Customer,
+				n.Folder,
 				n.Title,
 			)
 			if len(n.Tags) > 0 {

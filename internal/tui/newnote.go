@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -16,7 +17,7 @@ type newNoteStep int
 
 const (
 	stepType newNoteStep = iota
-	stepCustomer
+	stepFolder
 	stepTitle
 	stepDue
 	stepRepeat
@@ -46,9 +47,11 @@ type NewNoteModel struct {
 	store         *notes.NoteStore
 	existingNotes []*notes.Note
 
-	typeChoice     int
-	customerInput  string
-	titleInput     string
+	typeChoice        int
+	folderInput       string
+	folderSuggestions []string
+	folderChoice      int
+	titleInput        string
 	dueInput       string
 	repeatChoice   int
 	customRepeat   string
@@ -90,8 +93,8 @@ func (m *NewNoteModel) Update(msg tea.KeyPressMsg) (bool, tea.Cmd) {
 	switch m.step {
 	case stepType:
 		return m.handleTypeStep(key)
-	case stepCustomer:
-		return m.handleCustomerStep(key)
+	case stepFolder:
+		return m.handleFolderStep(key)
 	case stepTitle:
 		return m.handleTitleStep(key)
 	case stepDue:
@@ -124,30 +127,60 @@ func (m *NewNoteModel) handleTypeStep(key tea.Key) (bool, tea.Cmd) {
 			m.typeChoice++
 		}
 	case tea.KeyEnter:
-		m.step = stepCustomer
+		m.folderSuggestions = m.uniqueFolders()
+		m.folderChoice = -1
+		m.step = stepFolder
 	}
 	return false, nil
 }
 
-func (m *NewNoteModel) handleCustomerStep(key tea.Key) (bool, tea.Cmd) {
+func (m *NewNoteModel) handleFolderStep(key tea.Key) (bool, tea.Cmd) {
 	switch key.Code {
 	case tea.KeyEnter:
-		if strings.TrimSpace(m.customerInput) == "" {
-			m.err = fmt.Errorf("customer is required")
+		if m.folderChoice >= 0 && m.folderChoice < len(m.folderSuggestions) {
+			m.folderInput = m.folderSuggestions[m.folderChoice]
+		}
+		if strings.TrimSpace(m.folderInput) == "" {
+			m.err = fmt.Errorf("folder name is required")
 			return false, nil
 		}
 		m.err = nil
 		m.step = stepTitle
+	case tea.KeyUp:
+		if m.folderChoice > 0 {
+			m.folderChoice--
+		}
+	case tea.KeyDown:
+		if m.folderChoice < len(m.folderSuggestions)-1 {
+			m.folderChoice++
+		}
 	case tea.KeyBackspace:
-		if len(m.customerInput) > 0 {
-			m.customerInput = removeLastRune(m.customerInput)
+		m.folderChoice = -1
+		if len(m.folderInput) > 0 {
+			m.folderInput = removeLastRune(m.folderInput)
 		}
 	default:
 		if key.Text != "" {
-			m.customerInput += key.Text
+			m.folderChoice = -1
+			m.folderInput += key.Text
 		}
 	}
 	return false, nil
+}
+
+func (m *NewNoteModel) uniqueFolders() []string {
+	seen := make(map[string]bool)
+	for _, n := range m.existingNotes {
+		if n.Folder != "" {
+			seen[n.Folder] = true
+		}
+	}
+	var folders []string
+	for f := range seen {
+		folders = append(folders, f)
+	}
+	sort.Strings(folders)
+	return folders
 }
 
 func (m *NewNoteModel) handleTitleStep(key tea.Key) (bool, tea.Cmd) {
@@ -351,7 +384,7 @@ func (m *NewNoteModel) createNote() tea.Msg {
 	now := time.Now()
 
 	note := &notes.Note{
-		Customer: strings.TrimSpace(m.customerInput),
+		Folder: strings.TrimSpace(m.folderInput),
 		Type:     noteTypeValues[m.typeChoice],
 		Created:  now,
 		Status:   notes.StatusOpen,
@@ -448,8 +481,8 @@ func (m *NewNoteModel) View() string {
 	switch m.step {
 	case stepType:
 		s.WriteString(m.viewTypeStep())
-	case stepCustomer:
-		s.WriteString(m.viewCustomerStep())
+	case stepFolder:
+		s.WriteString(m.viewFolderStep())
 	case stepTitle:
 		s.WriteString(m.viewTitleStep())
 	case stepDue:
@@ -504,12 +537,24 @@ func (m *NewNoteModel) viewTypeStep() string {
 	return s.String()
 }
 
-func (m *NewNoteModel) viewCustomerStep() string {
+func (m *NewNoteModel) viewFolderStep() string {
 	var s strings.Builder
-	s.WriteString(headerStyle.Render("Customer"))
+	s.WriteString(headerStyle.Render("Folder"))
 	s.WriteString("\n")
-	s.WriteString(normalStyle.Render("Enter the customer or project name."))
+	s.WriteString(normalStyle.Render("Select an existing folder or type a new name."))
 	s.WriteString("\n\n")
+
+	if len(m.folderSuggestions) > 0 {
+		for i, f := range m.folderSuggestions {
+			if i == m.folderChoice {
+				s.WriteString(selectedStyle.Render(fmt.Sprintf("  > %s", f)))
+			} else {
+				s.WriteString(normalStyle.Render(fmt.Sprintf("    %s", f)))
+			}
+			s.WriteString("\n")
+		}
+		s.WriteString("\n")
+	}
 
 	inputStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#FFFFFF")).
@@ -517,11 +562,15 @@ func (m *NewNoteModel) viewCustomerStep() string {
 		Padding(0, 1).
 		Width(40)
 
-	s.WriteString(normalStyle.Render("  Customer: "))
-	s.WriteString(inputStyle.Render(m.customerInput + "_"))
+	s.WriteString(normalStyle.Render("  Folder: "))
+	if m.folderChoice >= 0 && m.folderChoice < len(m.folderSuggestions) {
+		s.WriteString(inputStyle.Render(m.folderSuggestions[m.folderChoice] + "_"))
+	} else {
+		s.WriteString(inputStyle.Render(m.folderInput + "_"))
+	}
 
 	s.WriteString("\n\n")
-	s.WriteString(helpStyle.Render("[Enter] next"))
+	s.WriteString(helpStyle.Render("[Up/Down] select existing  [Enter] next"))
 	return s.String()
 }
 
@@ -680,7 +729,7 @@ func (m *NewNoteModel) viewRelatedStep() string {
 	s.WriteString("\n")
 
 	for i, n := range m.existingNotes {
-		label := fmt.Sprintf("%s - %s", n.Customer, n.Title)
+		label := fmt.Sprintf("%s - %s", n.Folder, n.Title)
 		if i+1 == m.relatedChoice {
 			s.WriteString(selectedStyle.Render(fmt.Sprintf("  > %s", label)))
 		} else {
@@ -709,8 +758,8 @@ func (m *NewNoteModel) viewConfirmStep() string {
 	s.WriteString(normalStyle.Render(noteTypes[m.typeChoice]))
 	s.WriteString("\n")
 
-	s.WriteString(summaryLabel.Render("  Customer: "))
-	s.WriteString(normalStyle.Render(m.customerInput))
+	s.WriteString(summaryLabel.Render("  Folder:   "))
+	s.WriteString(normalStyle.Render(m.folderInput))
 	s.WriteString("\n")
 
 	s.WriteString(summaryLabel.Render("  Title:    "))
@@ -756,7 +805,7 @@ func (m *NewNoteModel) viewConfirmStep() string {
 	if noteTypeValues[m.typeChoice] == notes.Followup && m.relatedChoice > 0 && m.relatedChoice <= len(m.existingNotes) {
 		related := m.existingNotes[m.relatedChoice-1]
 		s.WriteString(summaryLabel.Render("  Related:  "))
-		s.WriteString(normalStyle.Render(fmt.Sprintf("%s - %s", related.Customer, related.Title)))
+		s.WriteString(normalStyle.Render(fmt.Sprintf("%s - %s", related.Folder, related.Title)))
 		s.WriteString("\n")
 	}
 
@@ -767,7 +816,7 @@ func (m *NewNoteModel) viewConfirmStep() string {
 
 // visibleSteps returns the step names that apply to the current note type.
 func (m *NewNoteModel) visibleSteps() []string {
-	steps := []string{"Type", "Customer", "Title", "Due"}
+	steps := []string{"Type", "Folder", "Title", "Due"}
 
 	if m.hasDue() {
 		steps = append(steps, "Repeat")
@@ -807,8 +856,8 @@ func (m *NewNoteModel) currentStepName() string {
 	switch m.step {
 	case stepType:
 		return "Type"
-	case stepCustomer:
-		return "Customer"
+	case stepFolder:
+		return "Folder"
 	case stepTitle:
 		return "Title"
 	case stepDue:

@@ -84,7 +84,7 @@ func TestOpenEncrypted_RoundTrip(t *testing.T) {
 		t.Fatalf("GenerateKey: %v", err)
 	}
 
-	original := []byte("---\ncustomer: acme\n---\n\n# Test Note\n\nHello world\n")
+	original := []byte("---\nfolder: acme\n---\n\n# Test Note\n\nHello world\n")
 	encPath := filepath.Join(dir, "note.md.age")
 	if err := crypto.EncryptToFile(encPath, original, identity.Recipient()); err != nil {
 		t.Fatalf("EncryptToFile: %v", err)

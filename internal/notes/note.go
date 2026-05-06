@@ -44,7 +44,7 @@ const (
 
 // Note represents a single note with frontmatter and body
 type Note struct {
-	Customer   string    `yaml:"customer"`
+	Folder     string    `yaml:"folder"`
 	Type       NoteType  `yaml:"type"`
 	Created    time.Time `yaml:"-"`
 	CreatedRaw string    `yaml:"created"`
@@ -131,7 +131,7 @@ func parseDate(dateStr, dateFormat string) (time.Time, error) {
 
 // frontmatterOut is used for marshaling to avoid time.Time serialization issues
 type frontmatterOut struct {
-	Customer  string   `yaml:"customer"`
+	Folder    string   `yaml:"folder"`
 	Type      string   `yaml:"type"`
 	Created   string   `yaml:"created"`
 	Due       string   `yaml:"due,omitempty"`
@@ -149,7 +149,7 @@ func GenerateTemplate(note *Note, dateFormat string) (string, error) {
 
 	// Build frontmatter struct
 	fm := frontmatterOut{
-		Customer: note.Customer,
+		Folder: note.Folder,
 		Type:     note.Type.String(),
 		Created:  formatDate(note.Created, dateFormat),
 		Status:   string(note.Status),
@@ -221,8 +221,8 @@ func formatDate(t time.Time, dateFormat string) string {
 	return t.Format(dateFormat)
 }
 
-// SanitizeCustomerName sanitizes a customer name for use in file paths
-func SanitizeCustomerName(name string) string {
+// SanitizeFolderName sanitizes a folder name for use in file paths
+func SanitizeFolderName(name string) string {
 	// Convert to lowercase
 	name = strings.ToLower(name)
 

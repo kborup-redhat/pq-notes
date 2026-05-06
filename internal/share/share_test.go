@@ -173,7 +173,7 @@ func TestShareAndImport(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	plaintext := []byte("---\ncustomer: Test\ntype: task\n---\n# Shared Note")
+	plaintext := []byte("---\nfolder: Test\ntype: task\n---\n# Shared Note")
 	notePath := filepath.Join(tmpDir, "original.md.age")
 	if err := crypto.EncryptToFile(notePath, plaintext, senderIdentity.Recipient()); err != nil {
 		t.Fatal(err)

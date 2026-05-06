@@ -25,7 +25,7 @@ func TestStoreCreate(t *testing.T) {
 	store, tmpDir := setupTestStore(t)
 
 	note := &Note{
-		Customer: "Acme Corp",
+		Folder: "Acme Corp",
 		Type:     Meeting,
 		Created:  time.Date(2026, 5, 6, 14, 30, 0, 0, time.UTC),
 		Status:   StatusOpen,
@@ -39,10 +39,10 @@ func TestStoreCreate(t *testing.T) {
 		t.Fatalf("Create() error = %v", err)
 	}
 
-	// Check that the file was created in the correct customer directory
+	// Check that the file was created in the correct folder directory
 	expectedDir := filepath.Join(tmpDir, "acme-corp")
 	if !strings.HasPrefix(path, expectedDir) {
-		t.Errorf("path %q should be under customer dir %q", path, expectedDir)
+		t.Errorf("path %q should be under folder dir %q", path, expectedDir)
 	}
 
 	// Check the file has .md.age extension
@@ -61,7 +61,7 @@ func TestStoreListAndRead(t *testing.T) {
 	store, _ := setupTestStore(t)
 
 	note := &Note{
-		Customer: "Acme Corp",
+		Folder: "Acme Corp",
 		Type:     Task,
 		Created:  time.Date(2026, 5, 6, 10, 0, 0, 0, time.UTC),
 		Status:   StatusOpen,
@@ -86,8 +86,8 @@ func TestStoreListAndRead(t *testing.T) {
 	}
 
 	listed := notes[0]
-	if listed.Customer != "Acme Corp" {
-		t.Errorf("Customer = %v, want Acme Corp", listed.Customer)
+	if listed.Folder != "Acme Corp" {
+		t.Errorf("Folder = %v, want Acme Corp", listed.Folder)
 	}
 	if listed.Title != "Implement feature X" {
 		t.Errorf("Title = %v, want Implement feature X", listed.Title)
@@ -120,7 +120,7 @@ func TestStoreUpdate(t *testing.T) {
 	store, _ := setupTestStore(t)
 
 	note := &Note{
-		Customer: "Test Customer",
+		Folder: "Test Folder",
 		Type:     Task,
 		Created:  time.Date(2026, 5, 6, 10, 0, 0, 0, time.UTC),
 		Status:   StatusOpen,
@@ -170,7 +170,7 @@ func TestStoreUpdate_PreservesCustomBody(t *testing.T) {
 	store, _ := setupTestStore(t)
 
 	note := &Note{
-		Customer: "Test Customer",
+		Folder: "Test Folder",
 		Type:     Meeting,
 		Created:  time.Date(2026, 5, 6, 10, 0, 0, 0, time.UTC),
 		Status:   StatusOpen,
@@ -216,7 +216,7 @@ func TestStoreSearch(t *testing.T) {
 	// Create 3 notes with different content
 	notes := []*Note{
 		{
-			Customer: "Acme Corp",
+			Folder: "Acme Corp",
 			Type:     Meeting,
 			Created:  time.Date(2026, 5, 6, 14, 0, 0, 0, time.UTC),
 			Status:   StatusOpen,
@@ -224,7 +224,7 @@ func TestStoreSearch(t *testing.T) {
 			Tags:     []string{"planning", "quarterly"},
 		},
 		{
-			Customer: "Beta Inc",
+			Folder: "Beta Inc",
 			Type:     Task,
 			Created:  time.Date(2026, 5, 5, 10, 0, 0, 0, time.UTC),
 			Status:   StatusOpen,
@@ -232,7 +232,7 @@ func TestStoreSearch(t *testing.T) {
 			Tags:     []string{"bug", "urgent"},
 		},
 		{
-			Customer: "Acme Corp",
+			Folder: "Acme Corp",
 			Type:     Followup,
 			Created:  time.Date(2026, 5, 4, 9, 0, 0, 0, time.UTC),
 			Status:   StatusDone,
@@ -260,7 +260,7 @@ func TestStoreSearch(t *testing.T) {
 		t.Errorf("Search result Title = %v, want Q2 Planning Session", results[0].Title)
 	}
 
-	// Search by customer name
+	// Search by folder name
 	results, err = store.Search("acme")
 	if err != nil {
 		t.Fatalf("Search() error = %v", err)
@@ -302,7 +302,7 @@ func TestStoreList_SkipsPqNotesDir(t *testing.T) {
 
 	// Create a note normally
 	note := &Note{
-		Customer: "Test Customer",
+		Folder: "Test Folder",
 		Type:     Reminder,
 		Created:  time.Date(2026, 5, 6, 10, 0, 0, 0, time.UTC),
 		Status:   StatusOpen,
@@ -350,7 +350,7 @@ func TestStoreList_SortsByCreatedDesc(t *testing.T) {
 
 	for i, created := range times {
 		note := &Note{
-			Customer: "Test Customer",
+			Folder: "Test Folder",
 			Type:     Task,
 			Created:  created,
 			Status:   StatusOpen,
@@ -384,7 +384,7 @@ func TestIntegrationFullWorkflow(t *testing.T) {
 	store, _ := setupTestStore(t)
 
 	meeting := &Note{
-		Customer:  "Acme Corp",
+		Folder:  "Acme Corp",
 		Type:      Meeting,
 		Created:   time.Now(),
 		Due:       time.Now().Add(24 * time.Hour),
@@ -394,7 +394,7 @@ func TestIntegrationFullWorkflow(t *testing.T) {
 		Attendees: []string{"Kim", "Sarah"},
 	}
 	task := &Note{
-		Customer: "Red Hat",
+		Folder: "Red Hat",
 		Type:     Task,
 		Created:  time.Now(),
 		Due:      time.Now().Add(72 * time.Hour),
@@ -404,7 +404,7 @@ func TestIntegrationFullWorkflow(t *testing.T) {
 		Priority: PriorityUrgent,
 	}
 	reminder := &Note{
-		Customer: "Internal",
+		Folder: "Internal",
 		Type:     Reminder,
 		Created:  time.Now(),
 		Due:      time.Now().Add(1 * time.Hour),

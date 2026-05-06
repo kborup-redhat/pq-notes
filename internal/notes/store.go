@@ -42,7 +42,7 @@ func createDir(dir string) error {
 	return os.MkdirAll(dir, 0700)
 }
 
-// Create generates a note template, encrypts it, and writes it to the customer directory.
+// Create generates a note template, encrypts it, and writes it to the folder directory.
 // Returns the full path of the created file.
 func (s *NoteStore) Create(note *Note) (string, error) {
 	layout := dateLayout(s.dateFormat)
@@ -51,10 +51,10 @@ func (s *NoteStore) Create(note *Note) (string, error) {
 		return "", fmt.Errorf("failed to generate template: %w", err)
 	}
 
-	customerDir := SanitizeCustomerName(note.Customer)
-	dirPath := filepath.Join(s.baseDir, customerDir)
+	folderDir := SanitizeFolderName(note.Folder)
+	dirPath := filepath.Join(s.baseDir, folderDir)
 	if err := createDir(dirPath); err != nil {
-		return "", fmt.Errorf("failed to create customer directory: %w", err)
+		return "", fmt.Errorf("failed to create folder directory: %w", err)
 	}
 
 	filename := NoteFilename(note.Title, note.Created)
@@ -113,7 +113,7 @@ func renderWithBody(note *Note, dateFormat string) (string, error) {
 	var sb strings.Builder
 
 	fm := frontmatterOut{
-		Customer: note.Customer,
+		Folder: note.Folder,
 		Type:     note.Type.String(),
 		Created:  formatDate(note.Created, dateFormat),
 		Status:   string(note.Status),
@@ -197,7 +197,7 @@ func (s *NoteStore) List() ([]*Note, error) {
 	return notes, nil
 }
 
-// Search performs a case-insensitive search across title, customer, body, and tags.
+// Search performs a case-insensitive search across title, folder, body, and tags.
 // Returns matching notes sorted by Created descending.
 func (s *NoteStore) Search(query string) ([]*Note, error) {
 	allNotes, err := s.List()
@@ -222,7 +222,7 @@ func matchesQuery(note *Note, lowerQuery string) bool {
 	if strings.Contains(strings.ToLower(note.Title), lowerQuery) {
 		return true
 	}
-	if strings.Contains(strings.ToLower(note.Customer), lowerQuery) {
+	if strings.Contains(strings.ToLower(note.Folder), lowerQuery) {
 		return true
 	}
 	if strings.Contains(strings.ToLower(note.Body), lowerQuery) {
