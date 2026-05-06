@@ -28,7 +28,7 @@ jobs:
           node-version: '20'
 
       - name: Install HonKit
-        run: npm install honkit@latest @honkit/plugin-mermaid-hybrid
+        run: npm install honkit@latest honkit-plugin-mermaid
 
       - name: Build tutorial
         run: npx honkit build docs/tutorial docs/tutorial/_book

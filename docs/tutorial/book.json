@@ -1,4 +1,4 @@
 {
   "title": "Building a Post-Quantum Encrypted Notes Manager in Go",
-  "plugins": ["mermaid-hybrid"]
+  "plugins": ["mermaid"]
 }
