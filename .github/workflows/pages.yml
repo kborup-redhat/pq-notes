@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'docs/tutorial/**'
+      - '.github/workflows/pages.yml'
 
   workflow_dispatch:
 
@@ -27,23 +28,18 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install HonKit
-        run: npm install honkit@latest honkit-plugin-mermaid
-
-      - name: Install plugins in book directory
+      - name: Install HonKit and plugins
         working-directory: docs/tutorial
-        run: npm install honkit-plugin-mermaid
+        run: npm install honkit honkit-plugin-mermaid
 
       - name: Build tutorial
-        run: npx honkit build docs/tutorial _book
-
-      - name: List build output
-        run: ls -la _book/
+        working-directory: docs/tutorial
+        run: npx honkit build . ./_book
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: _book
+          path: docs/tutorial/_book
 
   deploy:
     environment:
