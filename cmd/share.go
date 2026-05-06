@@ -44,7 +44,9 @@ var shareCmd = &cobra.Command{
 		}
 
 		exportDir := filepath.Join(configDir, "exports")
-		os.MkdirAll(exportDir, 0700)
+		if err := os.MkdirAll(exportDir, 0700); err != nil {
+			return fmt.Errorf("create export dir: %w", err)
+		}
 
 		exportPath, err := internalShare.ShareNote(args[0], identity, recipients[0], exportDir)
 		if err != nil {
@@ -75,7 +77,9 @@ var importCmd = &cobra.Command{
 
 		filename := filepath.Base(args[0])
 		destDir := filepath.Join(config.NotesDir(), "Shared")
-		os.MkdirAll(destDir, 0700)
+		if err := os.MkdirAll(destDir, 0700); err != nil {
+			return fmt.Errorf("create shared dir: %w", err)
+		}
 		destPath := filepath.Join(destDir, filename)
 
 		if err := crypto.EncryptToFile(destPath, plaintext, identity.Recipient()); err != nil {

@@ -39,14 +39,17 @@ func dateLayout(format string) string {
 
 // createDir creates a directory and all parents if they don't exist.
 func createDir(dir string) error {
-	return os.MkdirAll(dir, 0755)
+	return os.MkdirAll(dir, 0700)
 }
 
 // Create generates a note template, encrypts it, and writes it to the customer directory.
 // Returns the full path of the created file.
 func (s *NoteStore) Create(note *Note) (string, error) {
 	layout := dateLayout(s.dateFormat)
-	content := GenerateTemplate(note, layout)
+	content, err := GenerateTemplate(note, layout)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate template: %w", err)
+	}
 
 	customerDir := SanitizeCustomerName(note.Customer)
 	dirPath := filepath.Join(s.baseDir, customerDir)
@@ -88,11 +91,14 @@ func (s *NoteStore) Update(path string, note *Note) error {
 	layout := dateLayout(s.dateFormat)
 
 	var content string
+	var err error
 	if note.Body != "" {
-		// Preserve custom body: regenerate frontmatter + use existing body
-		content = renderWithBody(note, layout)
+		content, err = renderWithBody(note, layout)
 	} else {
-		content = GenerateTemplate(note, layout)
+		content, err = GenerateTemplate(note, layout)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to generate content: %w", err)
 	}
 
 	if err := crypto.EncryptToFile(path, []byte(content), s.identity.Recipient()); err != nil {
@@ -103,7 +109,7 @@ func (s *NoteStore) Update(path string, note *Note) error {
 }
 
 // renderWithBody generates frontmatter and appends the note's existing Body.
-func renderWithBody(note *Note, dateFormat string) string {
+func renderWithBody(note *Note, dateFormat string) (string, error) {
 	var sb strings.Builder
 
 	fm := frontmatterOut{
@@ -132,14 +138,22 @@ func renderWithBody(note *Note, dateFormat string) string {
 		fm.Related = note.Related
 	}
 
-	frontmatterBytes, _ := yaml.Marshal(&fm)
+	frontmatterBytes, err := yaml.Marshal(&fm)
+	if err != nil {
+		return "", fmt.Errorf("marshal frontmatter: %w", err)
+	}
 
 	sb.WriteString("---\n")
 	sb.Write(frontmatterBytes)
 	sb.WriteString("---\n\n")
 	sb.WriteString(note.Body)
 
-	return sb.String()
+	return sb.String(), nil
+}
+
+// Delete removes a note file from disk.
+func (s *NoteStore) Delete(path string) error {
+	return os.Remove(path)
 }
 
 // List walks the base directory, decrypts and parses all .md.age files,

@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"unicode"
@@ -32,14 +33,11 @@ type SetupModel struct {
 	notesDir      string
 	configDir     string
 	keyPath       string
-	nameInput     string
-	emailInput    string
 	countryInput  string
 	editorChoice  int     // 0=vi, 1=code
 	dateChoice    int     // 0=EU, 1=US
 	weekendDays   [7]bool // Mon-Sun
 	weekendCursor int
-	inputFocused  string // "name" or "email"
 	err           error
 	width         int
 	height        int
@@ -52,8 +50,7 @@ func NewSetupModel(notesDir, configDir string) *SetupModel {
 		cfg:          &config.Config{},
 		notesDir:     notesDir,
 		configDir:    configDir,
-		keyPath:      filepath.Join(configDir, "key.txt"),
-		inputFocused: "name",
+		keyPath: filepath.Join(configDir, "key.txt"),
 	}
 }
 
@@ -103,44 +100,8 @@ func (m *SetupModel) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m *SetupModel) handleEncryptionKeyStep(key tea.Key) (tea.Model, tea.Cmd) {
-	switch key.Code {
-	case tea.KeyTab:
-		if m.inputFocused == "name" {
-			m.inputFocused = "email"
-		} else {
-			m.inputFocused = "name"
-		}
-	case tea.KeyEnter:
-		if m.inputFocused == "name" {
-			m.inputFocused = "email"
-			return m, nil
-		}
-		// Validate
-		if strings.TrimSpace(m.nameInput) == "" {
-			m.err = fmt.Errorf("name is required")
-			return m, nil
-		}
-		if strings.TrimSpace(m.emailInput) == "" {
-			m.err = fmt.Errorf("email is required")
-			return m, nil
-		}
-		m.err = nil
+	if key.Code == tea.KeyEnter {
 		m.step = stepEditor
-	case tea.KeyBackspace:
-		if m.inputFocused == "name" && len(m.nameInput) > 0 {
-			m.nameInput = m.nameInput[:len(m.nameInput)-1]
-		} else if m.inputFocused == "email" && len(m.emailInput) > 0 {
-			m.emailInput = m.emailInput[:len(m.emailInput)-1]
-		}
-	default:
-		text := key.Text
-		if text != "" {
-			if m.inputFocused == "name" {
-				m.nameInput += text
-			} else {
-				m.emailInput += text
-			}
-		}
 	}
 	return m, nil
 }
@@ -203,7 +164,7 @@ func (m *SetupModel) handleCountryStep(key tea.Key) (tea.Model, tea.Cmd) {
 		m.step = stepWeekend
 	case tea.KeyBackspace:
 		if len(m.countryInput) > 0 {
-			m.countryInput = m.countryInput[:len(m.countryInput)-1]
+			m.countryInput = removeLastRune(m.countryInput)
 		}
 	default:
 		text := key.Text
@@ -241,11 +202,11 @@ func (m *SetupModel) finishSetup() tea.Msg {
 	// Set weekend days in config
 	m.cfg.Weekend = boolsToWeekend(m.weekendDays)
 
-	// Generate encryption key
-	_, err := crypto.GenerateKey(m.keyPath)
-	if err != nil {
-		m.err = fmt.Errorf("failed to generate key: %w", err)
-		return nil
+	if _, err := os.Stat(m.keyPath); os.IsNotExist(err) {
+		if _, err := crypto.GenerateKey(m.keyPath); err != nil {
+			m.err = fmt.Errorf("failed to generate key: %w", err)
+			return nil
+		}
 	}
 
 	// Save config
@@ -321,43 +282,11 @@ func (m *SetupModel) viewEncryptionKeyStep() string {
 
 	s.WriteString(headerStyle.Render("Step 1: Encryption Key"))
 	s.WriteString("\n")
-	s.WriteString(normalStyle.Render("Enter your name and email for key generation."))
+	s.WriteString(normalStyle.Render("A post-quantum hybrid encryption key will be generated to protect your notes."))
+	s.WriteString("\n")
+	s.WriteString(normalStyle.Render("The key will be stored in: " + m.keyPath))
 	s.WriteString("\n\n")
-
-	nameLabel := "  Name:  "
-	emailLabel := "  Email: "
-
-	nameValue := m.nameInput
-	emailValue := m.emailInput
-
-	inputStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FFFFFF")).
-		Background(lipgloss.Color("#333333")).
-		Padding(0, 1).
-		Width(40)
-
-	inactiveInputStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#CCCCCC")).
-		Background(lipgloss.Color("#1A1A1A")).
-		Padding(0, 1).
-		Width(40)
-
-	if m.inputFocused == "name" {
-		s.WriteString(normalStyle.Render(nameLabel))
-		s.WriteString(inputStyle.Render(nameValue + "_"))
-		s.WriteString("\n")
-		s.WriteString(normalStyle.Render(emailLabel))
-		s.WriteString(inactiveInputStyle.Render(emailValue))
-	} else {
-		s.WriteString(normalStyle.Render(nameLabel))
-		s.WriteString(inactiveInputStyle.Render(nameValue))
-		s.WriteString("\n")
-		s.WriteString(normalStyle.Render(emailLabel))
-		s.WriteString(inputStyle.Render(emailValue + "_"))
-	}
-
-	s.WriteString("\n\n")
-	s.WriteString(helpStyle.Render("[Tab] switch field  [Enter] next"))
+	s.WriteString(helpStyle.Render("[Enter] generate key and continue"))
 	return s.String()
 }
 

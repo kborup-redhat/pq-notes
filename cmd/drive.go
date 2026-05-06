@@ -65,7 +65,35 @@ var driveAutoCmd = &cobra.Command{
 	},
 }
 
+var drivePullCmd = &cobra.Command{
+	Use:   "pull",
+	Short: "Restore notes from Google Drive to local",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		notesDir := config.NotesDir()
+		configDir := config.ConfigDirIn(notesDir)
+		identity, err := crypto.LoadIdentity(filepath.Join(configDir, "key.txt"))
+		if err != nil {
+			return err
+		}
+		return drive.Pull(notesDir, configDir, identity)
+	},
+}
+
+var driveCleanCmd = &cobra.Command{
+	Use:   "clean",
+	Short: "Remove files from Drive that no longer exist locally",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		notesDir := config.NotesDir()
+		configDir := config.ConfigDirIn(notesDir)
+		identity, err := crypto.LoadIdentity(filepath.Join(configDir, "key.txt"))
+		if err != nil {
+			return err
+		}
+		return drive.Clean(notesDir, configDir, identity)
+	},
+}
+
 func init() {
-	driveCmd.AddCommand(driveSetupCmd, driveSyncCmd, driveAutoCmd)
+	driveCmd.AddCommand(driveSetupCmd, driveSyncCmd, driveAutoCmd, drivePullCmd, driveCleanCmd)
 	rootCmd.AddCommand(driveCmd)
 }

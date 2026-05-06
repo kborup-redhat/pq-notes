@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 
 	"filippo.io/age"
@@ -57,8 +58,10 @@ func ShouldNotify(due, now time.Time) bool {
 
 func Run(cfg *config.Config, identity *age.HybridIdentity, notesDir, configDir string) {
 	store := notes.NewNoteStore(notesDir, identity, cfg.DateFormat)
-	tracker := NewTracker(configDir + "/notified.json")
-	tracker.Load()
+	tracker := NewTracker(filepath.Join(configDir, "notified.json"))
+	if err := tracker.Load(); err != nil {
+		log.Printf("daemon: load tracker: %v", err)
+	}
 
 	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
@@ -101,5 +104,7 @@ func check(store *notes.NoteStore, tracker *Tracker) {
 		tracker.MarkNotified(noteID)
 	}
 
-	tracker.Save()
+	if err := tracker.Save(); err != nil {
+		log.Printf("daemon: save tracker: %v", err)
+	}
 }

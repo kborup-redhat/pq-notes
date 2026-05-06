@@ -140,7 +140,7 @@ func (m *NewNoteModel) handleCustomerStep(key tea.Key) (bool, tea.Cmd) {
 		m.step = stepTitle
 	case tea.KeyBackspace:
 		if len(m.customerInput) > 0 {
-			m.customerInput = m.customerInput[:len(m.customerInput)-1]
+			m.customerInput = removeLastRune(m.customerInput)
 		}
 	default:
 		if key.Text != "" {
@@ -161,7 +161,7 @@ func (m *NewNoteModel) handleTitleStep(key tea.Key) (bool, tea.Cmd) {
 		m.step = stepDue
 	case tea.KeyBackspace:
 		if len(m.titleInput) > 0 {
-			m.titleInput = m.titleInput[:len(m.titleInput)-1]
+			m.titleInput = removeLastRune(m.titleInput)
 		}
 	default:
 		if key.Text != "" {
@@ -187,7 +187,7 @@ func (m *NewNoteModel) handleDueStep(key tea.Key) (bool, tea.Cmd) {
 		m.step = m.nextAfterDue()
 	case tea.KeyBackspace:
 		if len(m.dueInput) > 0 {
-			m.dueInput = m.dueInput[:len(m.dueInput)-1]
+			m.dueInput = removeLastRune(m.dueInput)
 		}
 	default:
 		if key.Text != "" {
@@ -219,7 +219,7 @@ func (m *NewNoteModel) handleRepeatStep(key tea.Key) (bool, tea.Cmd) {
 		m.step = m.nextAfterRepeat()
 	case tea.KeyBackspace:
 		if repeatOptions[m.repeatChoice] == "Custom" && len(m.customRepeat) > 0 {
-			m.customRepeat = m.customRepeat[:len(m.customRepeat)-1]
+			m.customRepeat = removeLastRune(m.customRepeat)
 		}
 	default:
 		if key.Text != "" && repeatOptions[m.repeatChoice] == "Custom" {
@@ -237,7 +237,7 @@ func (m *NewNoteModel) handleTagsStep(key tea.Key) (bool, tea.Cmd) {
 		m.step = m.nextAfterTags()
 	case tea.KeyBackspace:
 		if len(m.tagsInput) > 0 {
-			m.tagsInput = m.tagsInput[:len(m.tagsInput)-1]
+			m.tagsInput = removeLastRune(m.tagsInput)
 		}
 	default:
 		if key.Text != "" {
@@ -270,7 +270,7 @@ func (m *NewNoteModel) handleAttendeesStep(key tea.Key) (bool, tea.Cmd) {
 		m.step = stepConfirm
 	case tea.KeyBackspace:
 		if len(m.attendeesInput) > 0 {
-			m.attendeesInput = m.attendeesInput[:len(m.attendeesInput)-1]
+			m.attendeesInput = removeLastRune(m.attendeesInput)
 		}
 	default:
 		if key.Text != "" {

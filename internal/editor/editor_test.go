@@ -1,7 +1,11 @@
 package editor
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
+
+	"github.com/kborup-redhat/pq-notes/internal/crypto"
 )
 
 func TestBuildCommand(t *testing.T) {
@@ -69,4 +73,42 @@ func TestBuildCommand(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestOpenEncrypted_RoundTrip(t *testing.T) {
+	dir := t.TempDir()
+	keyPath := filepath.Join(dir, "key.txt")
+
+	identity, err := crypto.GenerateKey(keyPath)
+	if err != nil {
+		t.Fatalf("GenerateKey: %v", err)
+	}
+
+	original := []byte("---\ncustomer: acme\n---\n\n# Test Note\n\nHello world\n")
+	encPath := filepath.Join(dir, "note.md.age")
+	if err := crypto.EncryptToFile(encPath, original, identity.Recipient()); err != nil {
+		t.Fatalf("EncryptToFile: %v", err)
+	}
+
+	// "true" exits immediately without modifying the file, so content should survive unchanged
+	if err := OpenEncrypted("true", encPath, identity); err != nil {
+		t.Fatalf("OpenEncrypted: %v", err)
+	}
+
+	decrypted, err := crypto.DecryptFile(encPath, identity)
+	if err != nil {
+		t.Fatalf("DecryptFile after edit: %v", err)
+	}
+
+	if string(decrypted) != string(original) {
+		t.Errorf("content changed unexpectedly:\ngot:  %q\nwant: %q", decrypted, original)
+	}
+
+	// Verify temp file was cleaned up
+	matches, _ := filepath.Glob(filepath.Join(dir, "*.tmp.*"))
+	if len(matches) > 0 {
+		t.Errorf("temp files not cleaned up: %v", matches)
+	}
+
+	_ = os.Remove(keyPath)
 }

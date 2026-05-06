@@ -110,7 +110,7 @@ func EncryptToFile(path string, plaintext []byte, recipients ...age.Recipient) e
 		return fmt.Errorf("no recipients provided")
 	}
 
-	file, err := os.Create(path)
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return fmt.Errorf("failed to create file: %w", err)
 	}

@@ -49,7 +49,7 @@ func (s *SearchModel) Update(msg tea.KeyPressMsg) (done bool, selected *notes.No
 		}
 	case tea.KeyBackspace:
 		if len(s.query) > 0 {
-			s.query = s.query[:len(s.query)-1]
+			s.query = removeLastRune(s.query)
 			s.search()
 		}
 	default:

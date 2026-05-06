@@ -58,7 +58,6 @@ func (f *FilterModel) Update(msg tea.KeyPressMsg) (done bool) {
 
 	switch key.Code {
 	case tea.KeyEscape:
-		// Cancel: clear selections so no filter is applied
 		f.selected = make(map[string]bool)
 		return true
 	case tea.KeyEnter:
@@ -71,8 +70,8 @@ func (f *FilterModel) Update(msg tea.KeyPressMsg) (done bool) {
 		if f.cursor < len(f.items)-1 {
 			f.cursor++
 		}
-	default:
-		if key.Text == " " && len(f.items) > 0 {
+	case ' ':
+		if len(f.items) > 0 {
 			item := f.items[f.cursor]
 			if f.selected[item] {
 				delete(f.selected, item)

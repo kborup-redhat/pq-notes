@@ -47,7 +47,7 @@ var rootCmd = &cobra.Command{
 		store := notes.NewNoteStore(notesDir, identity, cfg.DateFormat)
 		cal := calendar.New(cfg)
 
-		return tui.RunApp(cfg, store, cal, identity)
+		return tui.RunApp(cfg, store, cal, identity, notesDir, configDir)
 	},
 }
 

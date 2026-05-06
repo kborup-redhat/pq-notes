@@ -3,7 +3,9 @@ package share
 import (
 	"fmt"
 	"os"
+	"strings"
 
+	"filippo.io/age"
 	"gopkg.in/yaml.v3"
 )
 
@@ -36,6 +38,11 @@ func SaveContacts(path string, contacts []Contact) error {
 }
 
 func AddContact(path, name, publicKey string) error {
+	recipients, err := age.ParseRecipients(strings.NewReader(publicKey))
+	if err != nil || len(recipients) == 0 {
+		return fmt.Errorf("invalid public key: must be a valid age recipient")
+	}
+
 	contacts, err := LoadContacts(path)
 	if err != nil {
 		return err
@@ -59,6 +66,9 @@ func RemoveContact(path, name string) error {
 		if c.Name != name {
 			filtered = append(filtered, c)
 		}
+	}
+	if len(filtered) == len(contacts) {
+		return fmt.Errorf("contact %q not found", name)
 	}
 	return SaveContacts(path, filtered)
 }

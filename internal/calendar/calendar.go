@@ -246,8 +246,15 @@ func addCustomHolidays(bc *cal.BusinessCalendar, holidays []config.CustomHoliday
 			continue
 		}
 		var day, month int
-		fmt.Sscanf(parts[0], "%d", &day)
-		fmt.Sscanf(parts[1], "%d", &month)
+		if _, err := fmt.Sscanf(parts[0], "%d", &day); err != nil {
+			continue
+		}
+		if _, err := fmt.Sscanf(parts[1], "%d", &month); err != nil {
+			continue
+		}
+		if day < 1 || day > 31 || month < 1 || month > 12 {
+			continue
+		}
 		h := &cal.Holiday{
 			Name:  ch.Name,
 			Type:  cal.ObservanceOther,

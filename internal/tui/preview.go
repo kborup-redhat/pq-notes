@@ -9,6 +9,24 @@ import (
 	"github.com/kborup-redhat/pq-notes/internal/notes"
 )
 
+var (
+	cachedRenderer      *glamour.TermRenderer
+	cachedRendererWidth int
+)
+
+func getRenderer(width int) *glamour.TermRenderer {
+	if cachedRenderer != nil && cachedRendererWidth == width {
+		return cachedRenderer
+	}
+	r, err := glamour.NewTermRenderer(glamour.WithWordWrap(width - 4))
+	if err != nil {
+		return nil
+	}
+	cachedRenderer = r
+	cachedRendererWidth = width
+	return r
+}
+
 // RenderPreview renders a note as a Glamour-styled markdown preview.
 // Returns a dimmed placeholder when note is nil.
 func RenderPreview(note *notes.Note, width int, dateFormat string) string {
@@ -43,9 +61,8 @@ func RenderPreview(note *notes.Note, width int, dateFormat string) string {
 	sb.WriteString("---\n\n")
 	sb.WriteString(note.Body)
 
-	// Glamour rendering with word wrap to fit the preview pane.
-	r, err := glamour.NewTermRenderer(glamour.WithWordWrap(width - 4))
-	if err != nil {
+	r := getRenderer(width)
+	if r == nil {
 		return sb.String()
 	}
 

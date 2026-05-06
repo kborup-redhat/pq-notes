@@ -144,7 +144,7 @@ type frontmatterOut struct {
 }
 
 // GenerateTemplate generates a full note content with YAML frontmatter and type-specific body template
-func GenerateTemplate(note *Note, dateFormat string) string {
+func GenerateTemplate(note *Note, dateFormat string) (string, error) {
 	var sb strings.Builder
 
 	// Build frontmatter struct
@@ -175,10 +175,11 @@ func GenerateTemplate(note *Note, dateFormat string) string {
 		fm.Related = note.Related
 	}
 
-	// Marshal frontmatter
-	frontmatterBytes, _ := yaml.Marshal(&fm)
+	frontmatterBytes, err := yaml.Marshal(&fm)
+	if err != nil {
+		return "", fmt.Errorf("marshal frontmatter: %w", err)
+	}
 
-	// Write frontmatter
 	sb.WriteString("---\n")
 	sb.Write(frontmatterBytes)
 	sb.WriteString("---\n\n")
@@ -206,7 +207,7 @@ func GenerateTemplate(note *Note, dateFormat string) string {
 		sb.WriteString("## Status update\n")
 	}
 
-	return sb.String()
+	return sb.String(), nil
 }
 
 // formatDate formats a time.Time using the given format

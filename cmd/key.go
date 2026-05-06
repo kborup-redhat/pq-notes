@@ -42,7 +42,7 @@ var keyExportCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			outPath := "pq-notes-identity.txt"
+			outPath := filepath.Join(configDir, "pq-notes-identity.txt")
 			if err := os.WriteFile(outPath, data, 0600); err != nil {
 				return err
 			}
@@ -52,7 +52,7 @@ var keyExportCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			outPath := "pq-notes-public-key.txt"
+			outPath := filepath.Join(configDir, "pq-notes-public-key.txt")
 			if err := os.WriteFile(outPath, []byte(crypto.PublicKey(identity)+"\n"), 0644); err != nil {
 				return err
 			}

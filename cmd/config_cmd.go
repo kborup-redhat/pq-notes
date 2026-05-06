@@ -85,6 +85,10 @@ var holidaysRemoveCmd = &cobra.Command{
 				filtered = append(filtered, h)
 			}
 		}
+		if len(filtered) == len(cfg.CustomHolidays) {
+			fmt.Printf("Holiday %q not found\n", args[0])
+			return nil
+		}
 		cfg.CustomHolidays = filtered
 		if err := config.Save(cfg, configDir); err != nil {
 			return err

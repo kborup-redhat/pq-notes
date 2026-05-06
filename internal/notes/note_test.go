@@ -226,7 +226,7 @@ func TestGenerateTemplate_Meeting(t *testing.T) {
 		Title:    "Q2 Planning Meeting",
 	}
 
-	content := GenerateTemplate(note, "02-01-2006 15:04")
+	content, _ := GenerateTemplate(note, "02-01-2006 15:04")
 
 	if !strings.Contains(content, "customer: acme-corp") {
 		t.Errorf("Missing customer in frontmatter")
@@ -265,7 +265,7 @@ func TestGenerateTemplate_Task(t *testing.T) {
 		Title:    "Implement feature X",
 	}
 
-	content := GenerateTemplate(note, "02-01-2006 15:04")
+	content, _ := GenerateTemplate(note, "02-01-2006 15:04")
 
 	if !strings.Contains(content, "type: task") {
 		t.Errorf("Missing type in frontmatter")
@@ -294,7 +294,7 @@ func TestGenerateTemplate_Reminder(t *testing.T) {
 		Title:    "Call Bob",
 	}
 
-	content := GenerateTemplate(note, "02-01-2006 15:04")
+	content, _ := GenerateTemplate(note, "02-01-2006 15:04")
 
 	if !strings.Contains(content, "type: reminder") {
 		t.Errorf("Missing type in frontmatter")
@@ -318,7 +318,7 @@ func TestGenerateTemplate_Followup(t *testing.T) {
 		Title:    "Follow up on project X",
 	}
 
-	content := GenerateTemplate(note, "02-01-2006 15:04")
+	content, _ := GenerateTemplate(note, "02-01-2006 15:04")
 
 	if !strings.Contains(content, "type: followup") {
 		t.Errorf("Missing type in frontmatter")
@@ -348,7 +348,7 @@ func TestGenerateTemplate_OmitsEmptyFields(t *testing.T) {
 		// No due, repeat, tags, priority, attendees, related
 	}
 
-	content := GenerateTemplate(note, "02-01-2006 15:04")
+	content, _ := GenerateTemplate(note, "02-01-2006 15:04")
 
 	if strings.Contains(content, "due:") {
 		t.Errorf("Should not include empty due field")

@@ -3,7 +3,6 @@ package config
 import (
 	"os"
 	"path/filepath"
-	"runtime"
 
 	"gopkg.in/yaml.v3"
 )
@@ -27,14 +26,8 @@ type Config struct {
 // NotesDir returns the default notes directory based on the operating system.
 // Returns ~/notes/ on Linux/macOS, %USERPROFILE%\notes\ on Windows
 func NotesDir() string {
-	if runtime.GOOS == "windows" {
-		userProfile := os.Getenv("USERPROFILE")
-		return filepath.Join(userProfile, "notes")
-	}
-
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		// Fallback to current directory if home directory can't be determined
 		return "notes"
 	}
 	return filepath.Join(homeDir, "notes")
@@ -57,7 +50,7 @@ func Exists(configDir string) bool {
 // Creates the config directory if it doesn't exist.
 func Save(cfg *Config, configDir string) error {
 	// Create config directory if it doesn't exist
-	err := os.MkdirAll(configDir, 0755)
+	err := os.MkdirAll(configDir, 0700)
 	if err != nil {
 		return err
 	}
@@ -70,7 +63,7 @@ func Save(cfg *Config, configDir string) error {
 
 	// Write to config.yaml
 	configFile := filepath.Join(configDir, "config.yaml")
-	return os.WriteFile(configFile, data, 0644)
+	return os.WriteFile(configFile, data, 0600)
 }
 
 // Load reads and unmarshals the config.yaml from the config directory
