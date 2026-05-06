@@ -34,14 +34,15 @@ type App struct {
 	cal      *calendar.BusinessCal
 	identity *age.HybridIdentity
 
-	notes    []*notes.Note
-	cursor   int
-	focus    focusPane
-	view     viewState
-	width    int
-	height   int
-	showDone bool
-	err      error
+	notes          []*notes.Note
+	dashboardItems []DashboardItem
+	cursor         int
+	focus          focusPane
+	view           viewState
+	width          int
+	height         int
+	showDone       bool
+	err            error
 }
 
 // NewApp creates a new App model with the given dependencies.
@@ -109,7 +110,7 @@ func (a *App) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			a.cursor--
 		}
 	case tea.KeyDown:
-		if a.cursor < len(a.notes)-1 {
+		if a.cursor < len(a.dashboardItems)-1 {
 			a.cursor++
 		}
 	case tea.KeyTab:
@@ -150,30 +151,17 @@ func (a *App) View() tea.View {
 }
 
 func (a *App) renderList(width int) string {
-	if len(a.notes) == 0 {
-		return headerStyle.Render("No notes yet. Press [n] to create one.")
-	}
-
-	var s string
-	s += headerStyle.Render("NOTES") + "\n\n"
-
-	for i, note := range a.notes {
-		line := typeStyle.Render("["+string(note.Type)+"]") + " " + note.Title
-		if i == a.cursor {
-			s += selectedStyle.Width(width - 2).Render(line) + "\n"
-		} else {
-			s += normalStyle.Render(line) + "\n"
-		}
-	}
-	return s
+	items := BuildDashboard(a.notes, a.showDone, a.cfg.DateFormat)
+	a.dashboardItems = items
+	return RenderDashboard(items, a.cursor, width, a.cfg.DateFormat)
 }
 
 func (a *App) renderPreview(width int) string {
-	if len(a.notes) == 0 || a.cursor >= len(a.notes) {
+	if len(a.dashboardItems) == 0 || a.cursor >= len(a.dashboardItems) {
 		return dimStyle.Render("Select a note to preview")
 	}
 
-	note := a.notes[a.cursor]
+	note := a.dashboardItems[a.cursor].Note
 	return headerStyle.Render(note.Title) + "\n\n" +
 		"Customer: " + note.Customer + "\n" +
 		"Type: " + string(note.Type) + "\n" +
