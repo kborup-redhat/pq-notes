@@ -30,13 +30,20 @@ jobs:
       - name: Install HonKit
         run: npm install honkit@latest honkit-plugin-mermaid
 
+      - name: Install plugins in book directory
+        working-directory: docs/tutorial
+        run: npm install honkit-plugin-mermaid
+
       - name: Build tutorial
-        run: npx honkit build docs/tutorial docs/tutorial/_book
+        run: npx honkit build docs/tutorial _book
+
+      - name: List build output
+        run: ls -la _book/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/tutorial/_book
+          path: _book
 
   deploy:
     environment:
