@@ -380,6 +380,85 @@ func TestStoreList_SortsByCreatedDesc(t *testing.T) {
 	}
 }
 
+func TestIntegrationFullWorkflow(t *testing.T) {
+	store, _ := setupTestStore(t)
+
+	meeting := &Note{
+		Customer:  "Acme Corp",
+		Type:      Meeting,
+		Created:   time.Now(),
+		Due:       time.Now().Add(24 * time.Hour),
+		Title:     "Sprint Planning",
+		Tags:      []string{"sprint", "planning"},
+		Status:    StatusOpen,
+		Attendees: []string{"Kim", "Sarah"},
+	}
+	task := &Note{
+		Customer: "Red Hat",
+		Type:     Task,
+		Created:  time.Now(),
+		Due:      time.Now().Add(72 * time.Hour),
+		Title:    "Fix Login Bug",
+		Tags:     []string{"bug", "urgent"},
+		Status:   StatusOpen,
+		Priority: PriorityUrgent,
+	}
+	reminder := &Note{
+		Customer: "Internal",
+		Type:     Reminder,
+		Created:  time.Now(),
+		Due:      time.Now().Add(1 * time.Hour),
+		Title:    "Submit Timecards",
+		Status:   StatusOpen,
+		Repeat:   "every 2nd-last workday",
+	}
+
+	for _, n := range []*Note{meeting, task, reminder} {
+		if _, err := store.Create(n); err != nil {
+			t.Fatalf("create %s: %v", n.Title, err)
+		}
+	}
+
+	allNotes, err := store.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(allNotes) != 3 {
+		t.Fatalf("expected 3 notes, got %d", len(allNotes))
+	}
+
+	results, err := store.Search("bug")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(results) != 1 || results[0].Title != "Fix Login Bug" {
+		t.Errorf("search for 'bug' failed: got %d results", len(results))
+	}
+
+	var taskNote *Note
+	for _, n := range allNotes {
+		if n.Title == "Fix Login Bug" {
+			taskNote = n
+			break
+		}
+	}
+	if taskNote == nil {
+		t.Fatal("could not find Fix Login Bug note")
+	}
+	taskNote.Status = StatusDone
+	if err := store.Update(taskNote.FilePath, taskNote); err != nil {
+		t.Fatal(err)
+	}
+
+	updated, err := store.Read(taskNote.FilePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if updated.Status != StatusDone {
+		t.Error("task should be marked done")
+	}
+}
+
 func TestDateLayout(t *testing.T) {
 	tests := []struct {
 		format string
