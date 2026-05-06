@@ -32,6 +32,12 @@ jobs:
           GOOS=darwin GOARCH=arm64 go build -ldflags "$LDFLAGS" -o pq-notes-darwin-arm64 .
           GOOS=windows GOARCH=amd64 go build -ldflags "$LDFLAGS" -o pq-notes-windows-amd64.exe .
 
+      - name: Create source archive
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          git archive --format=tar.gz --prefix=pq-notes-${VERSION}/ -o pq-notes-${VERSION}-source.tar.gz HEAD
+          git archive --format=zip --prefix=pq-notes-${VERSION}/ -o pq-notes-${VERSION}-source.zip HEAD
+
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
@@ -42,3 +48,5 @@ jobs:
             pq-notes-darwin-amd64
             pq-notes-darwin-arm64
             pq-notes-windows-amd64.exe
+            pq-notes-*-source.tar.gz
+            pq-notes-*-source.zip
