@@ -6,6 +6,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/kborup-redhat/pq-notes/internal/calendar"
 	"github.com/kborup-redhat/pq-notes/internal/config"
+	"github.com/kborup-redhat/pq-notes/internal/editor"
 	"github.com/kborup-redhat/pq-notes/internal/notes"
 )
 
@@ -42,6 +43,7 @@ type App struct {
 	width          int
 	height         int
 	showDone       bool
+	newNote        *NewNoteModel
 	err            error
 }
 
@@ -80,6 +82,19 @@ type errMsg struct {
 
 // Update handles messages and returns the updated model and any commands.
 func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// Route key presses to the new note wizard when it is active.
+	if a.view == viewNewNote && a.newNote != nil {
+		if kp, ok := msg.(tea.KeyPressMsg); ok {
+			done, cmd := a.newNote.Update(kp)
+			if done {
+				a.view = viewDashboard
+				a.newNote = nil
+				return a, tea.Batch(cmd, a.loadNotes)
+			}
+			return a, cmd
+		}
+	}
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		a.width = msg.Width
@@ -89,6 +104,17 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case notesLoadedMsg:
 		a.notes = msg.notes
 		return a, nil
+
+	case noteCreatedMsg:
+		return a, func() tea.Msg {
+			if err := editor.Open(a.cfg.Editor, msg.path); err != nil {
+				return errMsg{err}
+			}
+			return editorClosedMsg{path: msg.path}
+		}
+
+	case editorClosedMsg:
+		return a, a.loadNotes
 
 	case errMsg:
 		a.err = msg.err
@@ -119,6 +145,9 @@ func (a *App) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		} else {
 			a.focus = focusList
 		}
+	case 'n':
+		a.newNote = NewNewNoteModel(a.cfg, a.store, a.notes)
+		a.view = viewNewNote
 	case 'q':
 		return a, tea.Quit
 	case 'a':
@@ -130,6 +159,10 @@ func (a *App) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 
 // View renders the split-pane layout.
 func (a *App) View() tea.View {
+	if a.view == viewNewNote && a.newNote != nil {
+		return tea.NewView(a.newNote.View())
+	}
+
 	if a.width == 0 {
 		return tea.NewView("Loading...")
 	}
