@@ -160,13 +160,8 @@ func (a *App) renderPreview(width int) string {
 	if len(a.dashboardItems) == 0 || a.cursor >= len(a.dashboardItems) {
 		return dimStyle.Render("Select a note to preview")
 	}
-
 	note := a.dashboardItems[a.cursor].Note
-	return headerStyle.Render(note.Title) + "\n\n" +
-		"Customer: " + note.Customer + "\n" +
-		"Type: " + string(note.Type) + "\n" +
-		"Status: " + string(note.Status) + "\n\n" +
-		note.Body
+	return RenderPreview(note, width, a.cfg.DateFormat)
 }
 
 // RunApp creates and runs the TUI application.
